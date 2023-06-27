@@ -1,0 +1,6 @@
+# Python
+__pycache__
+
+# MySQL Server
+db_mysql_data
+mysql_logs
