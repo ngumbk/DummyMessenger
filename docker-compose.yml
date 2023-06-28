@@ -6,12 +6,9 @@ services:
       - "3306:3306"
     restart: always
     environment:
-      MYSQL_DATABASE: "server_db"
       MYSQL_ROOT_PASSWORD: "123456"
     volumes:
       - "./db_mysql_data:/var/lib/mysql"
-      - "./mysql_logs:/var/log/mysql"
-      - "./database_scripts/init.sql:/docker-entrypoint-initdb.d/1.sql"
 
 volumes:
   db_mysql_data: #external: true
