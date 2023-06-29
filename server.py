@@ -1,13 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import mysql.connector
-import time
 
 
 class Message(BaseModel):
     name: str
     text: str
-    time: str | None = None
 
 app = FastAPI()
 
@@ -31,9 +29,8 @@ try:
         cursor.execute("USE server_db")
         cursor.execute("CREATE TABLE Messages ("
                         "message_id int NOT NULL AUTO_INCREMENT,"
-                        "sender_name varchar(40),"
-                        "message_text varchar(140),"
-                        "message_time timestamp,"
+                        "sender_name varchar(32),"
+                        "message_text varchar(64),"
                         "PRIMARY KEY (message_id));")
         print('DB Created!')
     cursor.close()
@@ -44,20 +41,13 @@ except mysql.connector.Error as err:
     print(err)
 
 
-# Returns DB connection
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
 @app.post("/send_message/")
 async def send_message(message: Message):
-    message.time = time.strftime('%Y-%m-%d %H:%M:%S')
     cnx1 = cnxpool.get_connection()
     cursor = cnx1.cursor()
     cursor.execute("USE server_db")
-    cursor.execute("INSERT INTO Messages(sender_name, message_text, message_time) "
-                   f"VALUES ('{message.name}', '{message.text}', '{message.time}')")
+    cursor.execute("INSERT INTO Messages(sender_name, message_text) "
+                   f"VALUES ('{message.name}', '{message.text}')")
     cnx1.commit()
     cursor.close()
     cnx1.close()
