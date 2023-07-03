@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import mysql.connector
+import time
 
 
 class Message(BaseModel):
-    name: str
+    sender: str
     text: str
+    created_at: str | None = None
 
 app = FastAPI()
 
@@ -15,6 +17,7 @@ dbconfig = {
   "password": "123456"
 }
 
+# Checking DB connection
 try:
     init_cnx = mysql.connector.connect(
         host='localhost',
@@ -28,33 +31,33 @@ try:
         cursor.execute("CREATE DATABASE server_db")
         cursor.execute("USE server_db")
         cursor.execute("CREATE TABLE Messages ("
-                        "message_id int NOT NULL AUTO_INCREMENT,"
-                        "sender_name varchar(32),"
-                        "message_text varchar(64),"
+                        "message_id INT NOT NULL AUTO_INCREMENT,"
+                        "sender_name VARCHAR(32),"
+                        "message_text VARCHAR(64),"
+                        "created_at DATE,"
+                        "user_messages_count INT,"
                         "PRIMARY KEY (message_id));")
         print('DB Created!')
     cursor.close()
-    cnxpool = mysql.connector.pooling.MySQLConnectionPool(pool_name="mypool",
-                                                          pool_size=3,
-                                                          **dbconfig)
+    init_cnx.close()
 except mysql.connector.Error as err:
     print(err)
 
 
 @app.post("/send_message/")
 async def send_message(message: Message):
-    cnx1 = cnxpool.get_connection()
-    cursor = cnx1.cursor()
-    cursor.execute("USE server_db")
-    cursor.execute("INSERT INTO Messages(sender_name, message_text) "
-                   f"VALUES ('{message.name}', '{message.text}')")
-    cnx1.commit()
-    cursor.close()
-    cnx1.close()
 
-    # Getting last 10 messages
-    cnx2 = cnxpool.get_connection()
-    cursor = cnx2.cursor()
+    # Inserting posted data to DB
+    cnx = mysql.connector.connect(**dbconfig)
+    cursor = cnx.cursor()
+    cursor.execute("USE server_db")
+    cursor.execute("INSERT INTO Messages(sender_name, message_text, created_at) "
+                   f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\')")
+    cnx.commit()
+    cursor.close()
+
+    # Getting 10 last messages
+    cursor = cnx.cursor(buffered=True)
     cursor.execute("SELECT COUNT(*) FROM Messages")
     entries_count = cursor.fetchone()[0]
     cursor.execute("SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
@@ -65,8 +68,15 @@ async def send_message(message: Message):
     else:
         for i in range(10):
             return_dict[i] = cursor.fetchone()
-    print(*return_dict.items(), sep='\n')
     reversed_dict = {}
-    for i in range(10):
-        reversed_dict[i] = return_dict[9 - i]
-    return reversed_dict
+    dict_len = len(return_dict)
+    for i in range(dict_len):
+        reversed_dict[i] = return_dict[dict_len - 1 - i]
+    return_dict = reversed_dict
+
+    # Adding message_per_user count to dict returned
+    cursor.execute(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{None}'")
+
+    cursor.close()
+    cnx.close()
+    return return_dict
