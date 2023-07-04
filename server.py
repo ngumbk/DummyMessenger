@@ -7,7 +7,6 @@ import time
 class Message(BaseModel):
     sender: str
     text: str
-    created_at: str | None = None
 
 app = FastAPI()
 
@@ -67,9 +66,13 @@ async def send_message(message: Message):
     # Blocking DB table
     await execute_db_query("LOCK TABLES Messages WRITE")
 
+    # Getting user_messages_count
+    user_messages_count = await execute_db_query(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{message.sender}'")
+    user_messages_count = user_messages_count[0][0] + 1
+
     # Inserting posted data to DB
-    await execute_db_query("INSERT INTO Messages(sender_name, message_text, created_at) "
-                        f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\')")
+    await execute_db_query("INSERT INTO Messages(sender_name, message_text, created_at, user_messages_count) "
+                        f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\', {user_messages_count})")
 
     # Getting 10 last messages
     entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages", cursor_buffered=True)
