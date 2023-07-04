@@ -44,30 +44,45 @@ except mysql.connector.Error as err:
     print(err)
 
 
+# DB I/O function
+async def execute_db_query(query, cursor_buffered=False):
+    cnx = mysql.connector.connect(**dbconfig)
+    try:
+        cursor = cnx.cursor(buffered=cursor_buffered)
+        cursor.execute("USE server_db")
+        cursor.execute(query)
+        result = cursor.fetchall()
+        cnx.commit()
+        return result
+    except Exception as e:
+        print("Error executing query:", e)
+    finally:
+        if cnx:
+            cnx.close()
+
+
 @app.post("/send_message/")
 async def send_message(message: Message):
 
+    # Blocking DB table
+    await execute_db_query("LOCK TABLES Messages WRITE")
+
     # Inserting posted data to DB
-    cnx = mysql.connector.connect(**dbconfig)
-    cursor = cnx.cursor()
-    cursor.execute("USE server_db")
-    cursor.execute("INSERT INTO Messages(sender_name, message_text, created_at) "
-                   f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\')")
-    cnx.commit()
-    cursor.close()
+    await execute_db_query("INSERT INTO Messages(sender_name, message_text, created_at) "
+                        f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\')")
 
     # Getting 10 last messages
-    cursor = cnx.cursor(buffered=True)
-    cursor.execute("SELECT COUNT(*) FROM Messages")
-    entries_count = cursor.fetchone()[0]
-    cursor.execute("SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
+    entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages", cursor_buffered=True)
+    entries_count = entries_count[0][0]
+
+    last_10_messages = await execute_db_query("SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
     return_dict = {}
     if entries_count < 10:
         for i in range(entries_count):
-            return_dict[i] = cursor.fetchone()
+            return_dict[i] = last_10_messages[i]
     else:
         for i in range(10):
-            return_dict[i] = cursor.fetchone()
+            return_dict[i] = last_10_messages[i]
     reversed_dict = {}
     dict_len = len(return_dict)
     for i in range(dict_len):
@@ -75,8 +90,7 @@ async def send_message(message: Message):
     return_dict = reversed_dict
 
     # Adding message_per_user count to dict returned
-    cursor.execute(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{None}'")
+    #await execute_db_query(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{None}'")
 
-    cursor.close()
-    cnx.close()
+    await execute_db_query("UNLOCK TABLES")
     return return_dict
