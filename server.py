@@ -92,8 +92,5 @@ async def send_message(message: Message):
         reversed_dict[i] = return_dict[dict_len - 1 - i]
     return_dict = reversed_dict
 
-    # Adding message_per_user count to dict returned
-    #await execute_db_query(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{None}'")
-
     await execute_db_query("UNLOCK TABLES")
     return return_dict
