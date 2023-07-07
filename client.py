@@ -5,7 +5,7 @@ import random
 import time
 #import resource
 
-URL = 'http://127.0.0.1:8000/send_message/'
+URLS = ['http://127.0.0.1:8081/send_message/', 'http://127.0.0.1:8082/send_message/'], 
 SENDER_NAMES = ['Andrey', 'Jenya', 'Yulia', 'Igor', 'Nikita', 'Sanya', 'Lera', 'Dima', 'Katya', 'Ilya']
 
 
@@ -13,7 +13,7 @@ async def make_request(sender, text):
     async with aiohttp.ClientSession() as session:
         data = {"sender": sender,
                 "text": text}
-        async with session.post(URL, json=data) as response:
+        async with session.post(random.choice(URLS), json=data) as response:
             return await response.text()
 
 
@@ -54,7 +54,7 @@ async def main():
     
     # Testing 1 request & Bandwidth
     start_time = time.time()
-    requests.post(URL, json={"sender": random.choice(SENDER_NAMES),
+    requests.post(URLS[0], json={"sender": random.choice(SENDER_NAMES),
                              "text": 'alo' * random.randint(1, 5)})
     time_1 = time.time() - start_time
     print(f'Time for 1 request: {time_1} sec.\nBandwidth: {100 / time_100} requests/sec.')

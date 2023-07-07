@@ -13,15 +13,16 @@ app = FastAPI()
 dbconfig = {
   "database": "server_db",
   "user": "root",
-  "password": "123456"
+  "password": "root"
 }
 
 # Checking DB connection
 try:
     init_cnx = mysql.connector.connect(
-        host='localhost',
+        host='db_mysql',
+        port='33060',
         user='root',
-        password='123456'
+        password='root'
     )
     cursor = init_cnx.cursor()
     cursor.execute("SHOW DATABASES LIKE 'server_db'")
@@ -58,6 +59,15 @@ async def execute_db_query(query, cursor_buffered=False):
     finally:
         if cnx:
             cnx.close()
+
+
+@app.get("/")
+async def get_root():
+    try:
+        entries_count = await execute_db_query("SELECT COUNT (*) FROM Messages", cursor_buffered=True)
+        return {"Messages entries": entries_count[0][0]}
+    except Exception as e:
+        return {"Error": e}
 
 
 @app.post("/send_message/")
