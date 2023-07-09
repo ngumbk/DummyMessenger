@@ -11,18 +11,18 @@ class Message(BaseModel):
 app = FastAPI()
 
 dbconfig = {
+  "host": "db_mysql",
   "database": "server_db",
-  "user": "root",
-  "password": "root"
+  "user": "db_user",
+  "password": "user-password"
 }
 
 # Checking DB connection
 try:
     init_cnx = mysql.connector.connect(
         host='db_mysql',
-        port='33060',
-        user='root',
-        password='root'
+        user='db_user',
+        password='user-password'
     )
     cursor = init_cnx.cursor()
     cursor.execute("SHOW DATABASES LIKE 'server_db'")
@@ -41,7 +41,7 @@ try:
     cursor.close()
     init_cnx.close()
 except mysql.connector.Error as err:
-    print(err)
+    print("On init_cnx:", err)
 
 
 # DB I/O function
@@ -53,6 +53,7 @@ async def execute_db_query(query, cursor_buffered=False):
         cursor.execute(query)
         result = cursor.fetchall()
         cnx.commit()
+        print("Query executed successfully!")
         return result
     except Exception as e:
         print("Error executing query:", e)
@@ -61,10 +62,11 @@ async def execute_db_query(query, cursor_buffered=False):
             cnx.close()
 
 
+# Get root function, just to check if app is connected to DB
 @app.get("/")
 async def get_root():
     try:
-        entries_count = await execute_db_query("SELECT COUNT (*) FROM Messages", cursor_buffered=True)
+        entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages", cursor_buffered=True)
         return {"Messages entries": entries_count[0][0]}
     except Exception as e:
         return {"Error": e}

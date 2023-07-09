@@ -1,0 +1,3 @@
+CREATE USER 'db_user'@'%' IDENTIFIED BY 'user-password';
+GRANT ALL PRIVILEGES ON *.* TO 'db_user'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;

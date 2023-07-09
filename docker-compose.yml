@@ -2,12 +2,15 @@ version: "3.8"
 services:
   db_mysql:
     image: mysql:8
+    ports:
+      - "3306:3306"
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: "root"
     volumes:
-      - "./db_mysql_data:/var/lib/mysql"
-      - "./mysql_logs:/var/log/mysql"
+      - "./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "./mysql/db_mysql_data:/var/lib/mysql"
+      - "./mysql/mysql_logs:/var/log/mysql"
     networks:
       - dummy_network
 
