@@ -3,6 +3,7 @@ import aiohttp
 import requests
 import random
 import time
+import sys
 
 URLS = ['http://127.0.0.1:8081/send_message/',
         'http://127.0.0.1:8082/send_message/'] 
@@ -44,10 +45,24 @@ async def run_multiple_requests():
     return results
 
 
-async def main():
-    print('Using 2 server replicas')
+async def check_server_availability(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        print("Server is accessible.", end='\n\n')
+    except requests.exceptions.RequestException as e:
+        print("Server is not accessible.", e)
+        sys.exit()
 
-    # Testing 100 requests from one coro
+
+async def main():
+    print('Checking server 1:')
+    await check_server_availability('http://127.0.0.1:8081/')
+    print('Checking server 2:')
+    await check_server_availability('http://127.0.0.1:8082/')
+    print('Start testing. Please, wait.')
+    
+    # Testing 5000 requests from 50 coros
     start_time = time.time()
     await run_multiple_requests()
     time_100 = time.time() - start_time
