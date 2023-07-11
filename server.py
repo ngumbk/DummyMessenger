@@ -53,7 +53,6 @@ async def execute_db_query(query, cursor_buffered=False):
         cursor.execute(query)
         result = cursor.fetchall()
         cnx.commit()
-        print("Query executed successfully!")
         return result
     except Exception as e:
         print("Error executing query:", e)
@@ -66,10 +65,18 @@ async def execute_db_query(query, cursor_buffered=False):
 @app.get("/")
 async def get_root():
     try:
-        entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages", cursor_buffered=True)
-        return {"Messages entries": entries_count[0][0]}
+        check_cnx = mysql.connector.connect(**dbconfig)
+        cursor = check_cnx.cursor()
+        cursor.execute("SHOW DATABASES LIKE 'server_db'")
+        if cursor.fetchone() != None:
+            return {"Message": "Database initialized. Table exists"}
+        else:
+            return {"Message": "Database initialized. Table not exists"}
+        
     except Exception as e:
-        return {"Error": e}
+        return {"Database not initialized. Exception raised": e}
+    finally:
+        check_cnx.close()
 
 
 @app.post("/send_message/")
@@ -79,18 +86,24 @@ async def send_message(message: Message):
     await execute_db_query("LOCK TABLES Messages WRITE")
 
     # Getting user_messages_count
-    user_messages_count = await execute_db_query(f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{message.sender}'")
+    user_messages_count = await execute_db_query(
+        f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{message.sender}'")
     user_messages_count = user_messages_count[0][0] + 1
 
     # Inserting posted data to DB
-    await execute_db_query("INSERT INTO Messages(sender_name, message_text, created_at, user_messages_count) "
-                        f"VALUES ('{message.sender}', '{message.text}', \'{time.strftime('%Y-%m-%d')}\', {user_messages_count})")
+    await execute_db_query("INSERT INTO Messages(sender_name, message_text,"
+                            "created_at, user_messages_count) VALUES ("
+                            f"'{message.sender}', '{message.text}',"
+                            f"\'{time.strftime('%Y-%m-%d')}\',"
+                            f"{user_messages_count})")
 
     # Getting 10 last messages
-    entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages", cursor_buffered=True)
+    entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages",
+                                           cursor_buffered=True)
     entries_count = entries_count[0][0]
 
-    last_10_messages = await execute_db_query("SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
+    last_10_messages = await execute_db_query(
+        "SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
     return_dict = {}
     if entries_count < 10:
         for i in range(entries_count):

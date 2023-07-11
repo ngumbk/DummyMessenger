@@ -11,28 +11,27 @@ services:
       - "./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql"
       - "./mysql/db_mysql_data:/var/lib/mysql"
       - "./mysql/mysql_logs:/var/log/mysql"
-    networks:
-      - dummy_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      timeout: 1s
+      interval: 40s
+      retries: 5
 
   server_1:
     image: dummy_msg_server
     ports:
       - "8081:8000"
-    networks:
-      - dummy_network
-    #command: sh -c "sleep 60s"
     depends_on:
-      - db_mysql
+      db_mysql:
+        condition: service_healthy
 
   server_2:
     image: dummy_msg_server
     ports:
       - "8082:8000"
-    networks:
-      - dummy_network
-    #command: sh -c "sleep 60s"
     depends_on:
-      - db_mysql
+      db_mysql:
+        condition: service_healthy
 
 volumes:
   db_mysql_data: #external: true
