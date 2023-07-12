@@ -5,6 +5,19 @@
 ## Требования
 Для запуска проекта на ОС Windows 10 требуется установить [Docker Desktop](https://docs.docker.com/desktop/install/windows-install/) и [Python 3.11.4](https://www.python.org/downloads/release/python-3114/) а также иметь интернет-подключение достаточной скорости чтобы сделать пулл докер-изображений и установить зависимости.
 
+### Используемые docker-изображения
+* [MySQL](https://hub.docker.com/_/mysql/)
+* [Python](https://hub.docker.com/_/python)
+
+### Используемые порты
+Приложение использует следующие порты на localhost:
+
+| Server      | Port |
+|-------------|------|
+| MySQL       | 3306 |
+| Server 1    | 8081 |
+| Server 2    | 8082 |
+
 ## Установка проекта  
 Скачайте проект с помощью [Git](http://git-scm.com/book/en/v2/Getting-Started-Installing-Git):
 
@@ -55,6 +68,7 @@ docker-compose down -v
 ```
 
 ## Возможные проблемы с запуском
+### Сервер БД не успел запуститься
 Возможна такая ситуация, что на вашем ПК docker-контейнер с MySQL Server запустится быстрее или медленнее, что повлечет за собой ошибку серверов, которую вы сможете отследить по логам docker-compose.  
 
 В таком случае в docker-compose.yml увеличьте *interval* в поле *healthcheck* сервиса db_mysql примерно на то время, на которое вам нужно отсрочить запуск контейнеров с бэкенд-серверами.
