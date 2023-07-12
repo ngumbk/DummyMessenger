@@ -34,7 +34,7 @@ cd DummyMessenger
 Для создания виртуальной среды и установки зависимостей выполните следующую последовательность команд:
 
 ```sh
-virtualenv [-p {path_to_python}] venv
+virtualenv [-p {путь_к_питону}] venv
 ./venv/Scripts/activate
 python -m pip install -r requirements.txt
 ```
@@ -82,3 +82,61 @@ docker-compose down -v
 ...
 ```
 После внесения изменений перезапустите docker-compose.
+
+## Проверка программы
+### Проверка записей БД
+#### Подключение к оболочке БД
+Чтобы подключиться к оболочке БД, необходимо узнать id контейнера, в котором она запущена. Для вывода информации о запущенных контейнерах, выполните следующую команду.
+```sh
+docker ps
+```
+В результате вы увидите следующий вывод в терминале:  
+
+![id контейнера с MySQL Server](res/mysql_container_id.png)
+
+Красной чертой подчеркнут id контейнера с MySQL-сервером. Для подключения к оболочке контейнера вставим этот id в следующую команду.
+
+```sh
+docker exec -it [id контейнера] mysql -u root -p 
+```
+Далее оболочка потребует ввести пароль для дальнейшего доступа. Для пользователя **root** пароль будет *root*.
+
+#### Запросы для проверки
+**Вывод всех записей:**
+```sql
+SELECT * FROM Messages;
+```
+
+**Проверка общего количества записей (при единственном запуске client.py должно быть 5001):**
+```sql
+SELECT COUNT(*) FROM Messages;
+```
+
+**Проверка уникальности значений поля ID (должно быть 5001):**
+```sql
+SELECT COUNT(DISTINCT message_id) AS unique_ids FROM Messages;
+```
+
+**Проверка отсутствия совпадений значений счетчиков сообщений для каждого пользователя (значения запросов должны совпадать):**
+```sql
+SELECT COUNT(*) AS msgs_from_user FROM Messages WHERE sender_name = '[имя отправителя]';
+```
+```sql
+SELECT COUNT(DISTINCT sender_name, user_messages_count) AS msgs_with_unique_n FROM Messages WHERE sender_name = '[имя отправителя]';
+```
+
+**Если все-таки счетчики не совпадают, то посмотреть конкретные id записей с дублированным полем user_message_count можно с помощью следующего запроса:**
+```sql
+SELECT *
+FROM Messages
+WHERE sender_name = '[имя отправителя]' AND user_messages_count IN (
+    SELECT user_messages_count
+    FROM Messages
+    WHERE sender_name = '[имя отправителя]'
+    GROUP BY user_messages_count
+    HAVING COUNT(*) > 1
+);
+```
+
+### Проверка ответов на запросы
+Их надо в файл писать, чел
