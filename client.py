@@ -71,7 +71,7 @@ async def main():
     # Testing 1 request & Bandwidth
     start_time = time.time()
     requests.post(URLS[0], json={"sender": random.choice(SENDER_NAMES),
-                             "text": 'alo' * random.randint(1, 5)})
+                             "text": "single request here"})
     time_1 = time.time() - start_time
     print(f'Time for 1 request: {time_1} sec.'
           f'\nBandwidth: {5000 / time_100} requests/sec.')
