@@ -72,17 +72,18 @@ def check_db_doubles():
     print(*doubles, sep='\n')
 
 
-def check_responses():
+def check_id_sequence_in_responses():
     try:
         with open('responses.json') as file:
             data = json.load(file)
-
             wrong_sequences_ids = []
-            for key in data:
-                # print(key, end='///')
+
+            for response_key in data:
+                # print(response_key, end='///')
                 id_sequence = []
-                for id_key in data[key]:
-                    id_sequence.append(data[key][str(id_key)][0])
+                for msg_key in data[response_key]:
+                    if str.isnumeric(msg_key):
+                        id_sequence.append(data[response_key][msg_key][0])
                 # print(id_sequence)
 
                 first_n = id_sequence[0]
@@ -91,7 +92,7 @@ def check_responses():
                 # print(normal_sequence)
 
                 if id_sequence != normal_sequence:
-                    wrong_sequences_ids.append(key)
+                    wrong_sequences_ids.append(response_key)
 
             if len(wrong_sequences_ids) == 0:
                 print('All ID sequences are ok!')
@@ -105,11 +106,41 @@ def check_responses():
         return None
 
 
+def check_response_last_msg():
+    try:
+        with open('responses.json') as file:
+            data = json.load(file)
+            wrong_responses_ids = []
+            
+            for response_key in data:
+                ids_sequence = [msg_key for msg_key in data[response_key]]
+                last_n = ids_sequence[-2]
+
+                message_sent = data[response_key]['Message_sent'][0]
+                last_message_in_response = data[response_key][last_n][0]
+                if last_message_in_response != message_sent:
+                    wrong_responses_ids.append(response_key)
+            if len(wrong_responses_ids) == 0:
+                print('All last messages in responses are ok!')
+            else:
+                print('Some last messages in responses are not ok! '
+                      'Those responses\' IDs:', wrong_responses_ids)
+                
+            return None
+    except TypeError as e:
+        print('Exception using json file:', e)
+        return None
+
+
 def main():
     print('\nCHECKING RESPONSE ID SEQUENCES\n' + '-' * 24)
-    check_responses()
+    check_id_sequence_in_responses()
     print('-' * 24, end='\n\n')
     
+    print('CHECKING THAT SENT MSG IS THE LAST IN THE RESPONSE\n' + '-' * 24)
+    check_response_last_msg()
+    print('-' * 24, end='\n\n')
+
     print('COMMON DB DATA\n' + '-' * 24)
     check_db_common_entries()
     print('-' * 24, end='\n\n')

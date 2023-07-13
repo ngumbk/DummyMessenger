@@ -26,7 +26,7 @@ def create_database_if_not_exists():
                             "message_id INT NOT NULL AUTO_INCREMENT,"
                             "sender_name VARCHAR(32),"
                             "message_text VARCHAR(64),"
-                            "created_at DATE,"
+                            "created_at TIMESTAMP,"
                             "user_messages_count INT,"
                             "PRIMARY KEY (message_id));")
             print('DB Created!')
@@ -85,11 +85,16 @@ async def send_message(message: Message):
         cursor.execute("INSERT INTO Messages(sender_name, message_text,"
                                 "created_at, user_messages_count) VALUES ("
                                 f"'{message.sender}', '{message.text}',"
-                                f"\'{time.strftime('%Y-%m-%d')}\',"
+                                f"\'{time.strftime('%Y-%m-%d %H:%M:%S')}\',"
                                 f"{user_messages_count})")
         
         cnx.commit()
 
+        cursor.execute("SELECT message_id FROM Messages "
+                       f"WHERE sender_name = '{message.sender}' "
+                       f"AND user_messages_count = {user_messages_count}")
+        this_message_id = cursor.fetchone()
+        
         # Getting 10 last messages
         cursor.execute(
             "SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
@@ -97,6 +102,7 @@ async def send_message(message: Message):
 
         return_dict = {i: message_data for i,
                        message_data in enumerate(last_10_messages[::-1])}
+        return_dict['Message_sent'] = this_message_id
 
         return return_dict
     except Exception as e:
