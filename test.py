@@ -52,8 +52,9 @@ def check_db_sender_entries(sender_name):
     if entries_count == entries_with_unique_msg_count:
         return True
     else:
-        print(f'Entries for sender {sender_name}:\n' + '.' * 24)
-        print("Whoops, numbers don't match!"
+        print('.' * 24)
+        print(f"Numbers don't match for {sender_name}!\n"
+              "Total entries/Entries with unique user_msg_count: "
               f"{entries_count}/{entries_with_unique_msg_count}")
         print('.' * 24, end='\n\n')
         return False
@@ -95,7 +96,7 @@ def check_responses():
             if len(wrong_sequences_ids) == 0:
                 print('All ID sequences are ok!')
             else:
-                print('Some ID sequences are not ok!'
+                print('Some ID sequences are not ok! '
                       'Those sequences\' IDs:', wrong_sequences_ids)
                 
             return None
@@ -120,19 +121,19 @@ def main():
         names_check.append(res)
     if names_check == [True for _ in range(10)]:
         print('All senders have correct msgs counters!')
+        print('-' * 24, end='\n\n')
     else:
         print('Some senders have incorrect msgs counters! Check above.')
-    print('-' * 24, end='\n\n')
-
-    while True:
-        response = input('Want to check doubles\' ids? (Y/N)\n')
-        if response in 'Yy':
-            check_db_doubles()
-        elif response in 'Nn':
-            print('Okay. Bye!')
-            break
-        else:
-            print('No such option as', response, end='\n\n')
+        print('-' * 24, end='\n\n')
+        while True:
+            response = input('Want to check doubles\' ids? (Y/N)\n')
+            if response in 'Yy':
+                check_db_doubles()
+            elif response in 'Nn':
+                print('Okay. Bye!')
+                break
+            else:
+                print('No such option as', response, end='\n\n')
 
 
 if __name__ == '__main__':
