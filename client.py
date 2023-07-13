@@ -18,8 +18,8 @@ async def make_request(sender, text, index):
                 "text": text}
         try:
             async with session.post(random.choice(URLS), json=data) as response:
-                response_text = await response.text()
-                return index, response_text
+                response_json = await response.json()
+                return index, response_json
         except aiohttp.ClientError as e:
             error_message = f"Error occurred for request {index}: {str(e)}"
             return index, error_message
