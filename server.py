@@ -38,6 +38,7 @@ try:
                         "user_messages_count INT,"
                         "PRIMARY KEY (message_id));")
         print('DB Created!')
+        print("Yes, Container is being rebuilt!")
     cursor.close()
     init_cnx.close()
 except mysql.connector.Error as err:
@@ -82,40 +83,41 @@ async def get_root():
 @app.post("/send_message/")
 async def send_message(message: Message):
 
-    # Blocking DB table
-    await execute_db_query("LOCK TABLES Messages WRITE")
+    cnx = mysql.connector.connect(**dbconfig)
+    cnx.start_transaction()
+    try:
+        cursor = cnx.cursor()
 
-    # Getting user_messages_count
-    user_messages_count = await execute_db_query(
-        f"SELECT COUNT(*) FROM Messages WHERE sender_name = '{message.sender}'")
-    user_messages_count = user_messages_count[0][0] + 1
+        # Locking the Messages table
+        cursor.execute("LOCK TABLES Messages WRITE")
 
-    # Inserting posted data to DB
-    await execute_db_query("INSERT INTO Messages(sender_name, message_text,"
-                            "created_at, user_messages_count) VALUES ("
-                            f"'{message.sender}', '{message.text}',"
-                            f"\'{time.strftime('%Y-%m-%d')}\',"
-                            f"{user_messages_count})")
+        # Getting user_messages_count
+        cursor.execute("SELECT COUNT(*)"
+                       f"FROM Messages WHERE sender_name = '{message.sender}'")
+        user_messages_count = cursor.fetchone()[0] + 1
 
-    # Getting 10 last messages
-    entries_count = await execute_db_query("SELECT COUNT(*) FROM Messages",
-                                           cursor_buffered=True)
-    entries_count = entries_count[0][0]
+        # Inserting posted data to DB
+        cursor.execute("INSERT INTO Messages(sender_name, message_text,"
+                                "created_at, user_messages_count) VALUES ("
+                                f"'{message.sender}', '{message.text}',"
+                                f"\'{time.strftime('%Y-%m-%d')}\',"
+                                f"{user_messages_count})")
+        
+        cnx.commit()
 
-    last_10_messages = await execute_db_query(
-        "SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
-    return_dict = {}
-    if entries_count < 10:
-        for i in range(entries_count):
-            return_dict[i] = last_10_messages[i]
-    else:
-        for i in range(10):
-            return_dict[i] = last_10_messages[i]
-    reversed_dict = {}
-    dict_len = len(return_dict)
-    for i in range(dict_len):
-        reversed_dict[i] = return_dict[dict_len - 1 - i]
-    return_dict = reversed_dict
+        # Getting 10 last messages
+        cursor.execute(
+            "SELECT * FROM Messages ORDER BY message_id DESC LIMIT 10")
+        last_10_messages = cursor.fetchall()
 
-    await execute_db_query("UNLOCK TABLES")
-    return return_dict
+        return_dict = {i: message_data for i,
+                       message_data in enumerate(last_10_messages[::-1])}
+
+        return return_dict
+    except Exception as e:
+        cnx.rollback()
+        print("Error sending message:", e)
+        raise
+    finally:
+        cursor.execute("UNLOCK TABLES")
+        cnx.close()
