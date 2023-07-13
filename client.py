@@ -81,16 +81,17 @@ async def main():
     # Testing 5000 requests from 50 coros
     start_time = time.time()
     responses = await run_multiple_requests()
-    time_100 = time.time() - start_time
-    print(f'Time for 5000 requests in 50 coroutines: {time_100} sec.')
+    time_5000 = time.time() - start_time
+    print(f'Time for 5000 requests in 50 coroutines: {time_5000} sec.')
+    print(f'Average time for 1 request, among 5000: {time_5000 / 5000} sec.')
     
     # Testing 1 request & Bandwidth
     start_time = time.time()
     requests.post(URLS[0], json={"sender": random.choice(SENDER_NAMES),
                              "text": "single request here"})
     time_1 = time.time() - start_time
-    print(f'Time for 1 request: {time_1} sec.'
-          f'\nBandwidth: {5000 / time_100} requests/sec.')
+    print(f'Time for single request: {time_1} sec.'
+          f'\nBandwidth: {5000 / time_5000} requests/sec.')
     
     save_responses_to_file(responses)
 

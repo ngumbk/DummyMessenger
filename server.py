@@ -8,7 +8,36 @@ class Message(BaseModel):
     sender: str
     text: str
 
+
+def create_database_if_not_exists():
+    # Create DB in case one doesn't exist
+    try:
+        init_cnx = mysql.connector.connect(
+            host='db_mysql',
+            user='db_user',
+            password='user-password'
+        )
+        cursor = init_cnx.cursor()
+        cursor.execute("SHOW DATABASES LIKE 'server_db'")
+        if cursor.fetchone() == None:
+            cursor.execute("CREATE DATABASE server_db")
+            cursor.execute("USE server_db")
+            cursor.execute("CREATE TABLE Messages ("
+                            "message_id INT NOT NULL AUTO_INCREMENT,"
+                            "sender_name VARCHAR(32),"
+                            "message_text VARCHAR(64),"
+                            "created_at DATE,"
+                            "user_messages_count INT,"
+                            "PRIMARY KEY (message_id));")
+            print('DB Created!')
+        cursor.close()
+        init_cnx.close()
+    except mysql.connector.Error as err:
+        print("On init_cnx:", err)
+
+
 app = FastAPI()
+create_database_if_not_exists()
 
 dbconfig = {
   "host": "db_mysql",
@@ -16,32 +45,6 @@ dbconfig = {
   "user": "db_user",
   "password": "user-password"
 }
-
-# Checking DB connection
-try:
-    init_cnx = mysql.connector.connect(
-        host='db_mysql',
-        user='db_user',
-        password='user-password'
-    )
-    cursor = init_cnx.cursor()
-    cursor.execute("SHOW DATABASES LIKE 'server_db'")
-    if cursor.fetchone() == None:
-        # Create DB in case one doesn't exist
-        cursor.execute("CREATE DATABASE server_db")
-        cursor.execute("USE server_db")
-        cursor.execute("CREATE TABLE Messages ("
-                        "message_id INT NOT NULL AUTO_INCREMENT,"
-                        "sender_name VARCHAR(32),"
-                        "message_text VARCHAR(64),"
-                        "created_at DATE,"
-                        "user_messages_count INT,"
-                        "PRIMARY KEY (message_id));")
-        print('DB Created!')
-    cursor.close()
-    init_cnx.close()
-except mysql.connector.Error as err:
-    print("On init_cnx:", err)
 
 
 # Get root function, just to check if app is connected to DB
