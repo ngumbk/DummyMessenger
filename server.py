@@ -38,28 +38,10 @@ try:
                         "user_messages_count INT,"
                         "PRIMARY KEY (message_id));")
         print('DB Created!')
-        print("Yes, Container is being rebuilt!")
     cursor.close()
     init_cnx.close()
 except mysql.connector.Error as err:
     print("On init_cnx:", err)
-
-
-# DB I/O function
-async def execute_db_query(query, cursor_buffered=False):
-    cnx = mysql.connector.connect(**dbconfig)
-    try:
-        cursor = cnx.cursor(buffered=cursor_buffered)
-        cursor.execute("USE server_db")
-        cursor.execute(query)
-        result = cursor.fetchall()
-        cnx.commit()
-        return result
-    except Exception as e:
-        print("Error executing query:", e)
-    finally:
-        if cnx:
-            cnx.close()
 
 
 # Get root function, just to check if app is connected to DB
