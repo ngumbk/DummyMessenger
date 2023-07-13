@@ -5,3 +5,6 @@ __pycache__
 # MySQL Server
 db_mysql_data
 mysql_logs
+
+# Output
+responses.json
